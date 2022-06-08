@@ -1,7 +1,115 @@
 ﻿@page "/admin"
 
-<h3>Admin</h3>
+@using System.ComponentModel
+@using AntDesign.TableModels
 
+@inject UserManager<IdentityUser> userManager
+
+<Table @ref="table"
+       TItem="User"
+       DataSource="@users"
+       Total="total"
+       @bind-PageIndex="pageIndex"
+       @bind-PageSize="pageSize"
+       @bind-SelectedRows="selectedRows"
+       OnChange="OnChange"
+>
+    <Selection Key="@(context.Id)" />
+    <Column @bind-Field="@context.Id" Sortable />
+    <Column @bind-Field="@context.UserName" Sortable />
+    <ActionColumn>
+        <Space>
+            <SpaceItem><Button Danger OnClick="()=>Delete(context.Id)">Delete</Button></SpaceItem>
+        </Space>
+    </ActionColumn>
+</Table>
+
+<br />
+<p>PageIndex: @pageIndex | PageSize: @pageSize | Total: @total</p>
+
+<br />
+<h5>selections:</h5>
+@if (selectedRows != null && selectedRows.Any())
+{
+    <Button Danger Size="small" OnClick="@(e => { selectedRows = null; })">Clear</Button>
+
+    @foreach (var selected in selectedRows)
+    {
+        <Tag @key="selected.Id" Closable OnClose="e=>RemoveSelection(selected.Id)">@selected.Id</Tag>
+    }
+}
+
+<Button OnClick="()=> { pageIndex--; }">Previous page</Button>
+<Button OnClick="()=> { pageIndex++; }">Next Page</Button>
+
+@using System.Text.Json;
+@using AntDesign
+@using Microsoft.AspNetCore.Identity
 @code {
 
+    private User[] users;
+
+    private IEnumerable<User> selectedRows;
+    private ITable table;
+
+    private int pageIndex = 1;
+    private int pageSize = 10;
+    private int total = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await GetUsers(1, 50);
+    }
+
+    public class User
+    {
+        public string Id { get; set; }
+        [DisplayName("User Name")]
+        public string UserName { get; set; }
+    }
+
+    public async Task OnChange(QueryModel<User> queryModel)
+    {
+        Console.WriteLine(JsonSerializer.Serialize(queryModel));
+    }
+
+    public async Task<User[]> GetUsers(int pageIndex, int pageSize)
+    {
+        IQueryable<IdentityUser> userIdentities = userManager.Users;
+
+        return userIdentities
+            .Skip((pageIndex - 1) * pageSize)
+            .Select(u => new User() {Id = u.Id, UserName = u.UserName})
+            .Take(pageSize)
+            .ToArray();
+    }
+
+    //public Task<WeatherForecast[]> GetForecastAsync(int pageIndex, int pageSize)
+    //{
+    //    var rng = new Random();
+    //    return Task.FromResult(Enumerable.Range((pageIndex - 1) * pageSize + 1, pageSize).Select(index =>
+    //    {
+    //        var temperatureC = rng.Next(-20, 55);
+    //        return new WeatherForecast
+    //        {
+    //            Id = index,
+    //            Date = DateTime.Now.AddDays(index),
+    //            TemperatureC = temperatureC,
+    //            Summary = Summaries[rng.Next(Summaries.Length)],
+    //            Hot = temperatureC > 30,
+    //        };
+    //    }).ToArray());
+    //}
+
+    public void RemoveSelection(string id)
+    {
+        var selected = selectedRows.Where(x => !x.Id.Equals(id));
+        selectedRows = selected;
+    }
+
+    private void Delete(string id)
+    {
+        users = users.Where(x => !x.Id.Equals(id)).ToArray();
+        total = users.Length;
+    }
 }
