@@ -1,10 +1,14 @@
 using BlazorApp.Areas.Identity;
 using BlazorApp.Data;
+using BlazorApp.Hubs;
+using BlazorApp.Services;
+using BlazorApp.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,8 +25,23 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
 builder.Services.AddAntDesign();
+builder.Services.AddSignalR().AddHubOptions<ApplicationHub>(options =>
+{
+    options.EnableDetailedErrors = true;
+});
+builder.Services.AddSingleton<Notifier>();
+
+builder.Services.AddSingleton<NotifierService>();
+
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
 
 var app = builder.Build();
+
+app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -46,7 +65,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapBlazorHub();
+    endpoints.MapFallbackToPage("/_Host");
+    endpoints.MapHub<ApplicationHub>("/apphub");
+});
 
 app.Run();

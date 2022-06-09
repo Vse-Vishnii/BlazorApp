@@ -4,6 +4,7 @@
 @using AntDesign.TableModels
 
 @inject UserManager<IdentityUser> userManager
+@inject ILogger<Admin> logger
 
 <Table @ref="table"
        TItem="User"
@@ -23,21 +24,6 @@
         </Space>
     </ActionColumn>
 </Table>
-
-<br />
-<p>PageIndex: @pageIndex | PageSize: @pageSize | Total: @total</p>
-
-<br />
-<h5>selections:</h5>
-@if (selectedRows != null && selectedRows.Any())
-{
-    <Button Danger Size="small" OnClick="@(e => { selectedRows = null; })">Clear</Button>
-
-    @foreach (var selected in selectedRows)
-    {
-        <Tag @key="selected.Id" Closable OnClose="e=>RemoveSelection(selected.Id)">@selected.Id</Tag>
-    }
-}
 
 <Button OnClick="()=> { pageIndex--; }">Previous page</Button>
 <Button OnClick="()=> { pageIndex++; }">Next Page</Button>
@@ -84,31 +70,20 @@
             .ToArray();
     }
 
-    //public Task<WeatherForecast[]> GetForecastAsync(int pageIndex, int pageSize)
-    //{
-    //    var rng = new Random();
-    //    return Task.FromResult(Enumerable.Range((pageIndex - 1) * pageSize + 1, pageSize).Select(index =>
-    //    {
-    //        var temperatureC = rng.Next(-20, 55);
-    //        return new WeatherForecast
-    //        {
-    //            Id = index,
-    //            Date = DateTime.Now.AddDays(index),
-    //            TemperatureC = temperatureC,
-    //            Summary = Summaries[rng.Next(Summaries.Length)],
-    //            Hot = temperatureC > 30,
-    //        };
-    //    }).ToArray());
-    //}
-
     public void RemoveSelection(string id)
     {
         var selected = selectedRows.Where(x => !x.Id.Equals(id));
         selectedRows = selected;
     }
 
-    private void Delete(string id)
+    private async void Delete(string id)
     {
+        var user = userManager.Users.FirstOrDefault(u => u.Id.Equals(id));
+        var result = await userManager.DeleteAsync(user);
+        if (result.Succeeded)
+        {
+            logger.LogInformation("User is deleted");
+        }
         users = users.Where(x => !x.Id.Equals(id)).ToArray();
         total = users.Length;
     }

@@ -1,0 +1,84 @@
+﻿@using AntDesign.ProLayout
+@using AntDesign
+@using BlazorApp.Services
+@using Microsoft.AspNetCore.SignalR.Client
+
+@inject MessageService messageService
+@inject NotifierService notifier
+@inject NavigationManager navigationManager
+
+@inherits AntDomComponentBase
+
+<AuthorizeView>
+    <Authorized>
+        <NoticeIcon ClearText="Empty"
+                    ViewMoreText="see more"
+                    Count="_count"
+                    OnClear="HandleClear"
+                    OnViewMore="HandleViewMore">
+            <NoticeList TabKey="notification"
+                        Title="Notifications"
+                        EmptyText="You have viewed all notifications"
+                        ShowViewMore
+                        Data="_notifications"/>
+        </NoticeIcon>
+    </Authorized>
+</AuthorizeView>
+
+
+@code {
+    private NoticeIconData[] _notifications = { };
+    private int _count = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ConfigureHubConnection();
+        await base.OnInitializedAsync();
+        SetClassMap();
+        _notifications = notifier.Messages.Select(m => new NoticeIconData() {Description = m}).ToArray();
+        _count = notifier.Messages.Count;
+    }
+
+    private async Task ConfigureHubConnection()
+    {
+        try
+        {
+            var hubConnection = new HubConnectionBuilder()
+                .WithUrl(navigationManager.ToAbsoluteUri("/apphub"))
+                .Build();
+
+            hubConnection.On<string, string>("ReceiveMessage", (message, message1) =>
+            {
+                notifier.Messages.Add(message);
+                StateHasChanged();
+            });
+
+            await notifier.ConfigureHub(hubConnection);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"ERROR: Failed to start chat client: {e.Message}");
+        }
+    }
+
+    protected void SetClassMap()
+    {
+        ClassMapper
+            .Clear()
+            .Add("right");
+    }
+
+    public void HandleSelectLang(MenuItem item)
+    {
+    }
+
+    public void HandleClear(string key)
+    {
+        _notifications = new NoticeIconData[] { };
+    }
+
+    public async Task HandleViewMore(string key)
+    {
+        await messageService.Info("Click on view more");
+    }
+}

@@ -1,4 +1,9 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using BlazorApp.Services
+@inherits LayoutComponentBase
+
+@inject NotifierService notifier
+@inject NavigationManager navigationManager
 
 <PageTitle>BlazorApp</PageTitle>
 
@@ -9,7 +14,8 @@
 
     <main>
         <div class="top-row px-4 auth">
-            <LoginDisplay />
+            <Notifier/>
+            <LoginDisplay/>
         </div>
 
         <article class="content px-4">
