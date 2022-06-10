@@ -87,6 +87,7 @@ namespace BlazorApp.Areas.Identity.Pages.Account
                 await _userStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Username, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
+                await _userManager.AddToRoleAsync(user, "visitor");
 
                 if (result.Succeeded)
                 {
@@ -105,7 +106,7 @@ namespace BlazorApp.Areas.Identity.Pages.Account
                     await _emailSender.SendEmailAsync(Input.Username, "Confirm your email",
                         $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
 
-                    await _userManager.AddToRoleAsync(user, "visitor");
+                    
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {

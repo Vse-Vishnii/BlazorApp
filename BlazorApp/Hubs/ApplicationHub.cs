@@ -5,9 +5,9 @@ namespace BlazorApp.Hubs
     public class ApplicationHub : Hub
     {
         public const string HubUrl = "/app";
-        public async Task SendMessage(string user, string message)
+        public async Task SendMessage(string message)
         {
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
+            await Clients.All.SendAsync("ReceiveMessage", message);
         }
     }
 }

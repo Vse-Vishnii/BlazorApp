@@ -1,43 +1,67 @@
-﻿using BlazorApp.Hubs;
+﻿using BlazorApp.Data;
+using BlazorApp.Hubs;
 using BlazorApp.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlazorApp.Services
 {
-    public class NotifierService : IAsyncDisposable
+    public class NotifierService
     {
-        public List<string> Messages { get; private set; } = new List<string>();
+        private readonly ApplicationDbContext db;
+        private readonly IServiceScopeFactory scopeFactory;
+        public List<string> Messages { get; } = new List<string>();
         public HubConnection HubConnection { get; private set; }
+
+        public NotifierService(IServiceScopeFactory scopeFactory)
+        {
+            this.scopeFactory = scopeFactory;
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                db.Notifications.RemoveRange(db.Notifications);
+                db.SaveChanges();
+            }
+        }
 
         public async Task ConfigureHub(HubConnection connection, Func<string, Task> action)
         {
             HubConnection = connection;
 
-            HubConnection.On<string, string>("ReceiveMessage", async (message, message1) =>
+            HubConnection.On<string>("ReceiveMessage", async message =>
                 await action(message)
             );
 
             await HubConnection.StartAsync();
         }
 
-        public async Task Send(string message) =>
-            await HubConnection.SendAsync("SendMessage", message, message);
+        public async Task Send(string message)
+        {
+            await HubConnection.SendAsync("SendMessage", message);
+            Console.WriteLine($"-----------------------Send Message: {message}-------------------------------");
+        }
 
         public bool IsConnected =>
             HubConnection.State == HubConnectionState.Connected;
 
-        public async ValueTask DisposeAsync()
+        public async Task AddMessage(string message)
         {
-            if (HubConnection is not null)
+            using (var scope = scopeFactory.CreateScope())
             {
-                await HubConnection.DisposeAsync();
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                db.Add(new Notification { Text = message });
+                await db.SaveChangesAsync();
             }
         }
 
-        public async Task AddMessage(string message)
+        public async Task<List<string>> GetMessages()
         {
-            Messages.Add(message);
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                return await db.Set<Notification>().Select(notification => notification.Text).ToListAsync();
+            }
         }
     }
 }

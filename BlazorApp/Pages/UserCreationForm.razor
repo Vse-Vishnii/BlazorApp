@@ -81,6 +81,7 @@
         var identity = new IdentityUser();
         await userStore.SetUserNameAsync(identity, user.UserName, CancellationToken.None);
         var result = await userManager.CreateAsync(identity, user.Password);
+        await userManager.AddToRoleAsync(identity, user.Role);
         if (result.Succeeded)
         {
             await OnAddUser.InvokeAsync();

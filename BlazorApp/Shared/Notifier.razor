@@ -35,7 +35,6 @@
         await ConfigureHubConnection();
         SetClassMap();
         await GetNotifications();
-        _count = notifier.Messages.Count;
     }
 
     private async Task ConfigureHubConnection()
@@ -56,7 +55,6 @@
     {
         await notifier.AddMessage(message);
         await GetNotifications();
-        StateHasChanged();
     }
 
     protected void SetClassMap()
@@ -82,8 +80,12 @@
 
     private async Task GetNotifications()
     {
-        _notifications = notifier.Messages
+        var messages = await notifier.GetMessages();
+        _notifications = messages
             .Select(message => new NoticeIconData() {Description = message})
             .ToArray();
+        _count = _notifications.Length;
+        Console.WriteLine($"---------------------------------Get Message-------------------------");
+        StateHasChanged();
     }
 }
