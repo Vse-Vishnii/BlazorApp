@@ -49,17 +49,14 @@
     private bool visible;
     bool _confirmLoading = false;
 
-    private string value = "blazor";
-    private ModalRef _modalRef;
-
     protected override async Task OnInitializedAsync()
     {
-        users = await GetUsers(1, 50);
+        await ResetUserList();
     }
 
     public async Task OnAddUser()
     {
-        users = await GetUsers(1, 50);
+        await ResetUserList();
     }
 
     public async Task OnChange(QueryModel<User> queryModel)
@@ -92,7 +89,13 @@
         {
             logger.LogInformation("User is deleted");
         }
-        users = users.Where(x => !x.Id.Equals(id)).ToArray();
+        await ResetUserList();
         total = users.Length;
+    }
+
+    private async Task ResetUserList()
+    {
+        users = await GetUsers(pageIndex, pageSize);
+        StateHasChanged();
     }
 }

@@ -8,27 +8,36 @@ namespace BlazorApp.Services
     public class NotifierService : IAsyncDisposable
     {
         public List<string> Messages { get; private set; } = new List<string>();
-        private HubConnection hubConnection;
+        public HubConnection HubConnection { get; private set; }
 
-        public async Task ConfigureHub(HubConnection connection)
+        public async Task ConfigureHub(HubConnection connection, Func<string, Task> action)
         {
-            hubConnection = connection;
+            HubConnection = connection;
 
-            await hubConnection.StartAsync();
+            HubConnection.On<string, string>("ReceiveMessage", async (message, message1) =>
+                await action(message)
+            );
+
+            await HubConnection.StartAsync();
         }
 
         public async Task Send(string message) =>
-            await hubConnection.SendAsync("SendMessage", message, message);
+            await HubConnection.SendAsync("SendMessage", message, message);
 
         public bool IsConnected =>
-            hubConnection.State == HubConnectionState.Connected;
+            HubConnection.State == HubConnectionState.Connected;
 
         public async ValueTask DisposeAsync()
         {
-            if (hubConnection is not null)
+            if (HubConnection is not null)
             {
-                await hubConnection.DisposeAsync();
+                await HubConnection.DisposeAsync();
             }
+        }
+
+        public async Task AddMessage(string message)
+        {
+            Messages.Add(message);
         }
     }
 }

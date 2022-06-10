@@ -30,47 +30,33 @@
     private NoticeIconData[] _notifications = { };
     private int _count = 0;
 
-    protected override async Task OnFirstAfterRenderAsync()
-    {
-        
-    }
-
     protected override async Task OnInitializedAsync()
     {
-        if (!_notifications.Any())
-        {
-            await ConfigureHubConnection();
-            SetClassMap();
-            _notifications = notifier.Messages.Select(message =>
-            {
-                return new NoticeIconData() {Description = message};
-            }).ToArray();
-            _count = notifier.Messages.Count;
-        }
+        await ConfigureHubConnection();
+        SetClassMap();
+        await GetNotifications();
+        _count = notifier.Messages.Count;
     }
-
-
 
     private async Task ConfigureHubConnection()
     {
         try
         {
-            var hubConnection = new HubConnectionBuilder()
-                .WithUrl(navigationManager.ToAbsoluteUri("/apphub"))
-                .Build();
+            var hubConnection = new HubConnectionBuilder().WithUrl(navigationManager.ToAbsoluteUri("/apphub")).Build();
 
-            hubConnection.On<string, string>("ReceiveMessage", (message, message1) =>
-            {
-                notifier.Messages.Add(message);
-                StateHasChanged();
-            });
-
-            await notifier.ConfigureHub(hubConnection);
+            await notifier.ConfigureHub(hubConnection, AddMessage);
         }
         catch (Exception e)
         {
             Console.WriteLine($"ERROR: Failed to start chat client: {e.Message}");
         }
+    }
+
+    private async Task AddMessage(string message)
+    {
+        await notifier.AddMessage(message);
+        await GetNotifications();
+        StateHasChanged();
     }
 
     protected void SetClassMap()
@@ -92,5 +78,12 @@
     public async Task HandleViewMore(string key)
     {
         await messageService.Info("Click on view more");
+    }
+
+    private async Task GetNotifications()
+    {
+        _notifications = notifier.Messages
+            .Select(message => new NoticeIconData() {Description = message})
+            .ToArray();
     }
 }

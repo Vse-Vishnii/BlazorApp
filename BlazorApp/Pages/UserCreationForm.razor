@@ -4,13 +4,15 @@
 @using AntDesign
 @using BlazorApp.Data
 @using System.Text.Json
+@using BlazorApp.Services
 @using Microsoft.AspNetCore.Identity
 
 @inherits FeedbackComponent<User>
 
 @inject IUserStore<IdentityUser> userStore
 @inject UserManager<IdentityUser> userManager
-@inject ILogger logger
+@inject ILogger<IdentityUser> logger
+@inject NotifierService notifier
 
 <Button OnClick="AddUser" Type="primary" Style="margin-bottom:16px">
     Add User
@@ -83,6 +85,7 @@
         {
             await OnAddUser.InvokeAsync();
             logger.LogInformation("User created a new account with password.");
+            await notifier.Send($"User {user.UserName} created");
         }
     }
 }
