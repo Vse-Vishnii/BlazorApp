@@ -29,7 +29,6 @@ builder.Services.AddSignalR().AddHubOptions<ApplicationHub>(options =>
 {
     options.EnableDetailedErrors = true;
 });
-builder.Services.AddSingleton<Notifier>();
 
 builder.Services.AddSingleton<NotifierService>();
 

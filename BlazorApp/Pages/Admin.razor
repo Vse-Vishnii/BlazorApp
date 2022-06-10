@@ -1,11 +1,14 @@
 ﻿@page "/admin"
 
 @using System.ComponentModel
+@using System.Linq
 @using AntDesign.TableModels
 
+@inject ModalService modalService
 @inject UserManager<IdentityUser> userManager
 @inject ILogger<Admin> logger
 
+<UserCreationForm OnAddUser="@OnAddUser"/>
 <Table @ref="table"
        TItem="User"
        DataSource="@users"
@@ -13,8 +16,7 @@
        @bind-PageIndex="pageIndex"
        @bind-PageSize="pageSize"
        @bind-SelectedRows="selectedRows"
-       OnChange="OnChange"
->
+       OnChange="OnChange">
     <Selection Key="@(context.Id)" />
     <Column @bind-Field="@context.Id" Sortable />
     <Column @bind-Field="@context.UserName" Sortable />
@@ -30,6 +32,8 @@
 
 @using System.Text.Json;
 @using AntDesign
+@using BlazorApp.Data
+@using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Identity
 @code {
 
@@ -42,16 +46,20 @@
     private int pageSize = 10;
     private int total = 0;
 
+    private bool visible;
+    bool _confirmLoading = false;
+
+    private string value = "blazor";
+    private ModalRef _modalRef;
+
     protected override async Task OnInitializedAsync()
     {
         users = await GetUsers(1, 50);
     }
 
-    public class User
+    public async Task OnAddUser()
     {
-        public string Id { get; set; }
-        [DisplayName("User Name")]
-        public string UserName { get; set; }
+        users = await GetUsers(1, 50);
     }
 
     public async Task OnChange(QueryModel<User> queryModel)

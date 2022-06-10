@@ -1,0 +1,88 @@
+﻿@page "/usercreation"
+
+@using Microsoft.AspNetCore.Components
+@using AntDesign
+@using BlazorApp.Data
+@using System.Text.Json
+@using Microsoft.AspNetCore.Identity
+
+@inherits FeedbackComponent<User>
+
+@inject IUserStore<IdentityUser> userStore
+@inject UserManager<IdentityUser> userManager
+@inject ILogger logger
+
+<Button OnClick="AddUser" Type="primary" Style="margin-bottom:16px">
+    Add User
+</Button>
+<Modal Visible="@visible"
+       OnOk="@HandleOk"
+       OnCancel="@HandleCancel"
+       ConfirmLoading="@loading"
+       OkText="@("Create")"
+       CancelText="@("Cancel")">
+    <Form Model="@user"
+          LabelColSpan="8"
+          WrapperColSpan="8">
+        <FormItem Label="Username">
+            <Input @bind-Value="@context.UserName"/>
+        </FormItem>
+        <FormItem Label="Password">
+            <InputPassword @bind-Value="@context.Password" />
+        </FormItem>
+        <FormItem Label="Role">
+            <Select DataSource="@context.Roles"
+                    @bind-Value="@context.Role">
+            </Select>
+        </FormItem>
+    </Form>
+</Modal>
+
+<br />
+<br />
+
+
+@code{
+
+    private User user;
+    private bool visible;
+    private bool loading = false;
+
+    [Parameter]
+    public EventCallback OnAddUser { get; set; }
+
+    private async Task AddUser()
+    {
+        user = new User();
+        visible = true;
+    }
+
+    private async Task HandleOk(MouseEventArgs e)
+    {
+        loading = true;
+        StateHasChanged();
+        await CreateUser();
+        Console.WriteLine("User Handle");
+        visible = false;
+        loading = false;
+        
+    }
+
+    private void HandleCancel(MouseEventArgs e)
+    {
+        Console.WriteLine("Clicked cancel button");
+        visible = false;
+    }
+
+    private async Task CreateUser()
+    {
+        var identity = new IdentityUser();
+        await userStore.SetUserNameAsync(identity, user.UserName, CancellationToken.None);
+        var result = await userManager.CreateAsync(identity, user.Password);
+        if (result.Succeeded)
+        {
+            await OnAddUser.InvokeAsync();
+            logger.LogInformation("User created a new account with password.");
+        }
+    }
+}

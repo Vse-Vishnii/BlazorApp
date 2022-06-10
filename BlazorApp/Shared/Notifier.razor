@@ -30,14 +30,26 @@
     private NoticeIconData[] _notifications = { };
     private int _count = 0;
 
+    protected override async Task OnFirstAfterRenderAsync()
+    {
+        
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        await ConfigureHubConnection();
-        await base.OnInitializedAsync();
-        SetClassMap();
-        _notifications = notifier.Messages.Select(m => new NoticeIconData() {Description = m}).ToArray();
-        _count = notifier.Messages.Count;
+        if (!_notifications.Any())
+        {
+            await ConfigureHubConnection();
+            SetClassMap();
+            _notifications = notifier.Messages.Select(message =>
+            {
+                return new NoticeIconData() {Description = message};
+            }).ToArray();
+            _count = notifier.Messages.Count;
+        }
     }
+
+
 
     private async Task ConfigureHubConnection()
     {
