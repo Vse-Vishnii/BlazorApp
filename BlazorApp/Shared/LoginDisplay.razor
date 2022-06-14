@@ -1,12 +1,21 @@
 ﻿@using AntDesign.ProLayout
 @using AntDesign
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Server.HttpSys
 @inherits AntDomComponentBase
+
+@inject UserManager<IdentityUser> userManager
+@inject IHttpContextAccessor httpContextAccessor
+@inject SignInManager<IdentityUser> signInManager
 
 <AuthorizeView Roles="admin">
     <a href="/admin">Admin</a>
 </AuthorizeView>
 <AuthorizeView>
     <Authorized>
+        <button type="submit" onclick="@FinishSessions(@context.User.Identity?.Name)" class="nav-link btn btn-link">Finish All Sessions</button>
         <p>Hello, @context.User.Identity?.Name!</p>
         <form method="post" action="Identity/Account/LogOut">
             <button type="submit" class="nav-link btn btn-link">Log out</button>
@@ -20,5 +29,13 @@
 
 @code
 {
-    
+    private async Task FinishSessions(string name)
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        IdentityUser user = await userManager.FindByNameAsync(name);
+        if (user != null)
+        {
+            await userManager.UpdateSecurityStampAsync(user);
+        }
+    }
 }

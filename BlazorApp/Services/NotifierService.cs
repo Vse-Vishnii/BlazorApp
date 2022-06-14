@@ -39,7 +39,6 @@ namespace BlazorApp.Services
         public async Task Send(string message)
         {
             await HubConnection.SendAsync("SendMessage", message);
-            Console.WriteLine($"-----------------------Send Message: {message}-------------------------------");
         }
 
         public bool IsConnected =>

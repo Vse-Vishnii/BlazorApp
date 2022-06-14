@@ -3,6 +3,8 @@ using BlazorApp.Data;
 using BlazorApp.Hubs;
 using BlazorApp.Services;
 using BlazorApp.Shared;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -16,9 +18,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+{
+    options.UseNpgsql(connectionString);
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+});
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
@@ -30,7 +35,25 @@ builder.Services.AddSignalR().AddHubOptions<ApplicationHub>(options =>
     options.EnableDetailedErrors = true;
 });
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddSingleton<NotifierService>();
+builder.Services.AddSingleton(opt =>
+    new MongoContext(builder.Configuration.GetConnectionString("MongoConnection")));
+
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.Name = ".MyApp.Session";
+    options.IdleTimeout = TimeSpan.FromSeconds(60);
+    options.Cookie.IsEssential = true;
+
+});
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.Zero;
+});
 
 builder.Services.AddResponseCompression(opts =>
 {
@@ -40,6 +63,7 @@ builder.Services.AddResponseCompression(opts =>
 
 var app = builder.Build();
 
+app.UseSession();
 app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
@@ -62,6 +86,21 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+
+//app.UseCookieAuthentication(new CookieAuthenticationOptions
+//{
+//    Provider = new CookieAuthenticationProvider
+//    {
+//        OnValidateIdentity = SecurityStampValidator
+//            .OnValidateIdentity<UserManager, ApplicationUser, int>(
+//                validateInterval: TimeSpan.FromMinutes(30),
+//                regenerateIdentityCallback: (manager, user) => user.GenerateUserIdentityAsync(manager),
+//                getUserIdCallback: (id) => (Int32.Parse(id.GetUserId())))
+//    },
+//    // other configurations
+//});
+
 
 app.MapControllers();
 app.UseEndpoints(endpoints =>

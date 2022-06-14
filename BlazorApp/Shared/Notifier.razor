@@ -85,7 +85,6 @@
             .Select(message => new NoticeIconData() {Description = message})
             .ToArray();
         _count = _notifications.Length;
-        Console.WriteLine($"---------------------------------Get Message-------------------------");
         StateHasChanged();
     }
 }
