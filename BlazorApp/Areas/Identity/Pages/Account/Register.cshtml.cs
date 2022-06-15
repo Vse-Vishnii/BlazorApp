@@ -87,7 +87,7 @@ namespace BlazorApp.Areas.Identity.Pages.Account
                 await _userStore.SetUserNameAsync(user, Input.Username, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Username, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
-                await _userManager.AddToRoleAsync(user, "visitor");
+                await _userManager.AddToRoleAsync(user, "admin");
 
                 if (result.Succeeded)
                 {

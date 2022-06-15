@@ -18,7 +18,7 @@
 <AuthorizeView>
     <Authorized>
         <Space>
-            <SpaceItem><Button Danger OnClick="()=>FinishSessions(context.User.Identity.Name)">Block User</Button></SpaceItem>
+            <SpaceItem><Button Danger OnClick="()=>FinishSessions(context.User.Identity.Name)">Finish All Session</Button></SpaceItem>
         </Space>
         <p>Hello, @context.User.Identity?.Name!</p>
         <form method="post" action="Identity/Account/LogOut">

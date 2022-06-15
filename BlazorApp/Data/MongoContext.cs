@@ -17,45 +17,50 @@ namespace BlazorApp.Data
             gridFS = new GridFSBucket(database);
         }
 
-        public IMongoCollection<User> Users
+        public IMongoCollection<Notification> Notifications
         {
-            get { return database.GetCollection<User>("Users"); }
+            get { return database.GetCollection<Notification>("Notifications"); }
         }
 
-        public async Task<IEnumerable<User>> GetUsers(int? year, string name)
-        {
-            var builder = new FilterDefinitionBuilder<User>();
-            var filter = builder.Empty;
-            if (!String.IsNullOrWhiteSpace(name))
-            {
-                filter = filter & builder.Regex("Name", new BsonRegularExpression(name));
-            }
-            if (year.HasValue)
-            {
-                filter = filter & builder.Eq("Year", year.Value);
-            }
+        //public async Task<IEnumerable<Notification>> GetNotifications(int? year, string name)
+        //{
+        //    var builder = new FilterDefinitionBuilder<Notification>();
+        //    var filter = builder.Empty;
+        //    if (!String.IsNullOrWhiteSpace(name))
+        //    {
+        //        filter = filter & builder.Regex("Name", new BsonRegularExpression(name));
+        //    }
+        //    if (year.HasValue)
+        //    {
+        //        filter = filter & builder.Eq("Year", year.Value);
+        //    }
 
-            return await Users.Find(filter).ToListAsync();
-        }
-        
-        public async Task<User> GetUser(string id)
-        {
-            return await Users.Find(new BsonDocument("_id", new ObjectId(id))).FirstOrDefaultAsync();
-        }
+        //    return await Notifications.Find(filter).ToListAsync();
+        //}
 
-        public async Task Create(User user)
+        public async Task<List<Notification>> GetNotifications()
         {
-            await Users.InsertOneAsync(user);
+            return await Notifications.Find(new BsonDocument()).ToListAsync();
         }
 
-        public async Task Update(User user)
+        public async Task<Notification> GetNotification(string id)
         {
-            await Users.ReplaceOneAsync(new BsonDocument("_id", new ObjectId(user.Id)), user);
+            return await Notifications.Find(new BsonDocument("_id", new ObjectId(id))).FirstOrDefaultAsync();
+        }
+
+        public async Task Create(Notification notification)
+        {
+            await Notifications.InsertOneAsync(notification);
+        }
+
+        public async Task Update(Notification notification)
+        {
+            await Notifications.ReplaceOneAsync(new BsonDocument("_id", new ObjectId(notification.Id)), notification);
         }
 
         public async Task Remove(string id)
         {
-            await Users.DeleteOneAsync(new BsonDocument("_id", new ObjectId(id)));
+            await Notifications.DeleteOneAsync(new BsonDocument("_id", new ObjectId(id)));
         }
     }
 }

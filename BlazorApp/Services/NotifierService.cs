@@ -4,33 +4,30 @@ using BlazorApp.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 
 namespace BlazorApp.Services
 {
     public class NotifierService
     {
-        private readonly ApplicationDbContext db;
-        private readonly IServiceScopeFactory scopeFactory;
-        public List<string> Messages { get; } = new List<string>();
+        private readonly MongoContext mongoContext;
+
         public HubConnection HubConnection { get; private set; }
 
-        public NotifierService(IServiceScopeFactory scopeFactory)
+        public NotifierService(MongoContext mongoContext)
         {
-            this.scopeFactory = scopeFactory;
-            using (var scope = scopeFactory.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                db.Notifications.RemoveRange(db.Notifications);
-                db.SaveChanges();
-            }
+            this.mongoContext = mongoContext;
         }
 
-        public async Task ConfigureHub(HubConnection connection, Func<string, Task> action)
+        public async Task ConfigureHub(HubConnection hubConnection,Func<string, Task> action)
         {
-            HubConnection = connection;
+            HubConnection = hubConnection;
 
             HubConnection.On<string>("ReceiveMessage", async message =>
-                await action(message)
+                {
+                    await action(message);
+                }
+                
             );
 
             await HubConnection.StartAsync();
@@ -39,6 +36,7 @@ namespace BlazorApp.Services
         public async Task Send(string message)
         {
             await HubConnection.SendAsync("SendMessage", message);
+            await AddMessage(message);
         }
 
         public bool IsConnected =>
@@ -46,21 +44,13 @@ namespace BlazorApp.Services
 
         public async Task AddMessage(string message)
         {
-            using (var scope = scopeFactory.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                db.Add(new Notification { Text = message });
-                await db.SaveChangesAsync();
-            }
+            mongoContext.Create(new Notification(message, DateTime.Now));
         }
 
         public async Task<List<string>> GetMessages()
         {
-            using (var scope = scopeFactory.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                return await db.Set<Notification>().Select(notification => notification.Text).ToListAsync();
-            }
+            var notifications = await mongoContext.GetNotifications();
+            return notifications.Select(notification =>notification.Text).ToList();
         }
     }
 }
