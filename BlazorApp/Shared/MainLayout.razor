@@ -2,6 +2,10 @@
 @using BlazorApp.Services
 @inherits LayoutComponentBase
 
+@inject TrackUserLogout trackUserLogout
+@inject NavigationManager navigation
+@inject AuthenticationStateProvider authenticationStateProvider
+
 <PageTitle>BlazorApp</PageTitle>
 
 <div class="page">
@@ -20,3 +24,47 @@
         </article>
     </main>
 </div>
+
+@code{
+    protected override void OnInitialized()
+    {
+    // Подключение обработчика события logout
+        trackUserLogout.UserOut += OnUserOut;
+    }
+
+    async void OnUserOut(string name)
+    {
+        var state = await authenticationStateProvider.GetAuthenticationStateAsync();
+
+    // Выход из системы производится только того пользователя, 
+    // который инициировал это действие.
+    // Имя пользователя уникально в системе.
+        if (state.User.Identity.Name == name)
+        {
+            navigation.NavigateTo("/", true);
+        }
+
+    // Код работать не будет. 
+    //if (_SignInManager.IsSignedIn(state.User))
+        {
+    // Метод выписывания пользователя удаляет куки. Чтобы удалить куки,
+    // необходимо добавить в заголовок HTTP соответствующую команду. 
+    // Отправка заголовка HTTP должно отправляться впервую 
+    // очередь, до отправки контента страницы.
+    // В этом месте строка не работает, поскольку страница уже загружена
+    // и заголовки HTTP уже отправлены.
+    // await _signInManager.SignOutAsync();
+
+    //_navigation.NavigateTo("/Identity/Account/Login", true);
+        }
+    }
+
+    // Очистка перед удалением компонента.
+    // Иначе будет выбрасываться исключение, 
+    // в частности в строке метода события: 
+    // _navigation.NavigateTo("/delete-cookie", true)
+    public void Dispose()
+    {
+        trackUserLogout.UserOut -= OnUserOut;
+    }
+}

@@ -1,5 +1,6 @@
 ﻿@using AntDesign.ProLayout
 @using AntDesign
+@using BlazorApp.Services
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using Microsoft.AspNetCore.Identity
@@ -9,13 +10,16 @@
 @inject UserManager<IdentityUser> userManager
 @inject IHttpContextAccessor httpContextAccessor
 @inject SignInManager<IdentityUser> signInManager
+@inject TrackUserLogout trackUserLogout
 
 <AuthorizeView Roles="admin">
     <a href="/admin">Admin</a>
 </AuthorizeView>
 <AuthorizeView>
     <Authorized>
-        <button type="submit" onclick="@FinishSessions(@context.User.Identity?.Name)" class="nav-link btn btn-link">Finish All Sessions</button>
+        <Space>
+            <SpaceItem><Button Danger OnClick="()=>FinishSessions(context.User.Identity.Name)">Block User</Button></SpaceItem>
+        </Space>
         <p>Hello, @context.User.Identity?.Name!</p>
         <form method="post" action="Identity/Account/LogOut">
             <button type="submit" class="nav-link btn btn-link">Log out</button>
@@ -36,6 +40,7 @@
         if (user != null)
         {
             await userManager.UpdateSecurityStampAsync(user);
+            trackUserLogout.OnUserOut(user.UserName);
         }
     }
 }

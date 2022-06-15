@@ -38,13 +38,15 @@ builder.Services.AddSignalR().AddHubOptions<ApplicationHub>(options =>
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<NotifierService>();
+builder.Services.AddSingleton<TrackUserLogout>();
+
 builder.Services.AddSingleton(opt =>
     new MongoContext(builder.Configuration.GetConnectionString("MongoConnection")));
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.Cookie.Name = ".MyApp.Session";
+    options.Cookie.Name = ".AdventureWorks.Session";
     options.IdleTimeout = TimeSpan.FromSeconds(60);
     options.Cookie.IsEssential = true;
 
@@ -63,7 +65,7 @@ builder.Services.AddResponseCompression(opts =>
 
 var app = builder.Build();
 
-app.UseSession();
+
 app.UseResponseCompression();
 
 // Configure the HTTP request pipeline.
@@ -87,22 +89,9 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseSession();
 
-//app.UseCookieAuthentication(new CookieAuthenticationOptions
-//{
-//    Provider = new CookieAuthenticationProvider
-//    {
-//        OnValidateIdentity = SecurityStampValidator
-//            .OnValidateIdentity<UserManager, ApplicationUser, int>(
-//                validateInterval: TimeSpan.FromMinutes(30),
-//                regenerateIdentityCallback: (manager, user) => user.GenerateUserIdentityAsync(manager),
-//                getUserIdCallback: (id) => (Int32.Parse(id.GetUserId())))
-//    },
-//    // other configurations
-//});
-
-
-app.MapControllers();
+app.MapRazorPages();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapBlazorHub();

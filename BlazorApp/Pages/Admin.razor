@@ -9,6 +9,7 @@
 @inject ILogger<Admin> logger
 @inject NavigationManager navigationManager
 @inject SignInManager<IdentityUser> signInManager
+@inject TrackUserLogout trackUserLogout
 
 <UserCreationForm OnAddUser="@OnAddUser"/>
 <Table @ref="table"
@@ -38,6 +39,7 @@
 @using System.Text.Json;
 @using AntDesign
 @using BlazorApp.Data
+@using BlazorApp.Services
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Identity
@@ -107,6 +109,7 @@
             user.LockoutEnd = DateTime.Now.AddYears(200);
             await userManager.UpdateAsync(user);
             await userManager.UpdateSecurityStampAsync(user);
+            trackUserLogout.OnUserOut(user.UserName);
         }
     }
 
